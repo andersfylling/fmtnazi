@@ -28,5 +28,6 @@ func containsCodeBlock(evt interface{}) interface{} {
 }
 
 func sayHello(s disgord.Session, data *disgord.MessageCreate) {
-	data.Message.Reply(s, "hello")
+	_, err := data.Message.Reply(s, "hello")
+	s.Logger().Error(err)
 }

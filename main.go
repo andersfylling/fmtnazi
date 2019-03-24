@@ -19,10 +19,6 @@ func main() {
     defer client.StayConnectedUntilInterrupted()
     filter, _ := std.NewMsgFilter(client)
 
-    client.On(disgord.EvtMessageCreate,
-    	filter.NotByBot,
-    	containsCodeBlock,
-
-    	sayHello)
+    client.On(disgord.EvtMessageCreate, filter.NotByBot, containsCodeBlock, sayHello)
 }
 
