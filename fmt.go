@@ -48,8 +48,12 @@ func formatMessage(s disgord.Session, data *disgord.MessageCreate) {
 	}
 
 	reply := "\n#> Written by " + data.Message.Author.Mention() + "\n\n" + string(replyBytes)
-	_, err = data.Message.Reply(s, reply)
-	s.Logger().Error(err)
+	if _, err = data.Message.Reply(s, reply); err != nil {
+		s.Logger().Error(err)
+		return
+	}
+
+	_ = s.DeleteFromDiscord(data.Message)
 }
 
 func craftReply(content []rune) (reply []rune, err error) {
