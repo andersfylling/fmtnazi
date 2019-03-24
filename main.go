@@ -12,12 +12,18 @@ func main() {
 		BotToken: os.Getenv("DISGORD_TOKEN"),
 		Logger:   disgord.DefaultLogger(false), // debug=false
 	})
+	defer client.StayConnectedUntilInterrupted()
+
 	if u, err := client.CreateBotURL(); err == nil {
 		fmt.Println(u)
 	}
 
-	defer client.StayConnectedUntilInterrupted()
 	filter, _ := std.NewMsgFilter(client)
+	client.On(disgord.EvtMessageCreate,
+		// middleware
+		filter.NotByBot,
+		containsCodeBlock,
 
-	client.On(disgord.EvtMessageCreate, filter.NotByBot, containsCodeBlock, formatCode)
+		// handler
+		formatMessage)
 }

@@ -1,11 +1,15 @@
 package main
 
 import (
+	"bytes"
 	"errors"
 	"github.com/andersfylling/disgord"
 	"go/format"
 	"strings"
 )
+
+const prefixCodeBlock = "```go"
+const suffixCodeBlock = "```"
 
 func getMsg(evt interface{}) (msg *disgord.Message) {
 	switch t := evt.(type) {
@@ -22,33 +26,71 @@ func getMsg(evt interface{}) (msg *disgord.Message) {
 
 func containsCodeBlock(evt interface{}) interface{} {
 	msg := getMsg(evt)
-	if !strings.Contains(strings.ToLower(msg.Content), "```go") {
+	if !strings.Contains(strings.ToLower(msg.Content), prefixCodeBlock) {
+		return nil
+	}
+
+	// if there is a start, make sure there is a end
+	start := strings.Index(strings.ToLower(msg.Content), prefixCodeBlock)
+	end := strings.Index(strings.ToLower(msg.Content[start+len(prefixCodeBlock):]), suffixCodeBlock)
+	if end == -1 {
 		return nil
 	}
 
 	return evt
 }
 
-func formatCode(s disgord.Session, data *disgord.MessageCreate) {
-	code, err := gofmt([]byte(data.Message.Content))
+func formatMessage(s disgord.Session, data *disgord.MessageCreate) {
+	replyBytes, err := craftReply(bytes.Runes([]byte(data.Message.Content)))
 	if err != nil {
-		_, err := data.Message.Reply(s, err.Error())
 		s.Logger().Error(err)
 		return
 	}
 
-	reply := string(code)
+	reply := "\n#> Written by " + data.Message.Author.Mention() + "\n\n" + string(replyBytes)
 	_, err = data.Message.Reply(s, reply)
 	s.Logger().Error(err)
 }
 
-func gofmt(content []byte) ([]byte, error) {
-	start := strings.Index(string(content), "```go") + len("```go")
-	code := content[start:]
-	end := strings.Index(string(code), "```")
-	code = code[:end]
-	codeStr := string(code)
+func craftReply(content []rune) (reply []rune, err error) {
+	tmp := content
+	for {
+		start := strings.Index(string(tmp), prefixCodeBlock)
+		if start == -1 {
+			// all code blocks have been handled
+			break
+		}
+		end := strings.Index(string(tmp[start+len(prefixCodeBlock):]), suffixCodeBlock)
 
+		reply = append(reply, tmp[:start]...)
+		code, err := gofmt(tmp[start : start+len(prefixCodeBlock)+end+len(suffixCodeBlock)])
+		if err != nil {
+			return nil, err
+		}
+		reply = append(reply, code...)
+		tmp = tmp[start+len(prefixCodeBlock)+end+len(suffixCodeBlock):]
+
+	}
+
+	reply = append(reply, tmp...)
+	return reply, nil
+}
+
+// gofmt takes a code block, with or without discord wraps, and returns
+// correctly formatted go code using spaces instead of tabs.
+func gofmt(content []rune) ([]rune, error) {
+	var code []rune
+
+	// unwrap
+	start := strings.Index(string(content), prefixCodeBlock) + len(prefixCodeBlock)
+	code = content[start:]
+	if start > 0 {
+		end := strings.Index(string(code), suffixCodeBlock)
+		code = code[:end]
+	}
+
+	// control checks
+	codeStr := string(code)
 	if !strings.Contains(codeStr, "func main") {
 		return nil, errors.New("missing func main")
 	}
@@ -57,7 +99,7 @@ func gofmt(content []byte) ([]byte, error) {
 	}
 
 	// go fmt
-	formatted, err := format.Source(code)
+	formatted, err := format.Source([]byte(codeStr))
 	if err != nil {
 		return nil, err
 	}
@@ -69,8 +111,10 @@ func gofmt(content []byte) ([]byte, error) {
 	formatted = []byte(fStr)
 
 	// wrap in code block
-	formatted = append([]byte("```go"), formatted...)
-	formatted = append(formatted, []byte("```")...)
+	if start > 0 {
+		formatted = append([]byte(prefixCodeBlock), formatted...)
+		formatted = append(formatted, []byte(suffixCodeBlock)...)
+	}
 
-	return formatted, nil
+	return bytes.Runes(formatted), nil
 }

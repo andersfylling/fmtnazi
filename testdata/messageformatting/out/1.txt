@@ -1,0 +1,6 @@
+Hello, there!
+```go
+func main() {
+    fmt.Println("ok")
+}
+```

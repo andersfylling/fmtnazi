@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/pkg/errors"
 	"io/ioutil"
@@ -9,7 +10,6 @@ import (
 	"strings"
 	"testing"
 )
-
 
 func getFiles(path string) (files []string, err error) {
 	var results []string
@@ -59,8 +59,36 @@ func TestFmt(t *testing.T) {
 			panic(err)
 		}
 
-		got, err := gofmt(input)
-		if err = compare(got, expects); err != nil {
+		got, err := gofmt(bytes.Runes(input))
+		if err = compare([]byte(string(got)), expects); err != nil {
+			t.Error(err)
+		}
+	}
+}
+
+func TestMsgFmt(t *testing.T) {
+	inputs, err := getFiles("testdata/messageformatting/in")
+	if err != nil {
+		t.Fatal(err)
+	}
+	outputs, err := getFiles("testdata/messageformatting/out")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for i := range inputs {
+		input, err := ioutil.ReadFile(inputs[i])
+		if err != nil {
+			continue
+		}
+
+		expects, err := ioutil.ReadFile(outputs[i])
+		if err != nil {
+			panic(err)
+		}
+
+		got, err := craftReply(bytes.Runes(input))
+		if err = compare([]byte(string(got)), expects); err != nil {
 			t.Error(err)
 		}
 	}
