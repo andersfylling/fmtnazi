@@ -1,0 +1,22 @@
+# kubernetes deployment file (GKE)
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: fmtnazi
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        name: fmtnazi
+    spec:
+      containers:
+        - name: fmtnazi
+          image: andersfylling/fmtnazi-disgord:latest
+          env:
+            - name: DISGORD_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: discord-tokens
+                  key: fmtnazi
+
