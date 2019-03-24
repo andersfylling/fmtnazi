@@ -30,35 +30,47 @@ func containsCodeBlock(evt interface{}) interface{} {
 }
 
 func formatCode(s disgord.Session, data *disgord.MessageCreate) {
-	code, err := gofmt(data.Message.Content)
+	code, err := gofmt([]byte(data.Message.Content))
 	if err != nil {
 		_, err := data.Message.Reply(s, err.Error())
 		s.Logger().Error(err)
 		return
 	}
 
-	reply := "```go\n" + code + "\n```"
+	reply := string(code)
 	_, err = data.Message.Reply(s, reply)
 	s.Logger().Error(err)
 }
 
-func gofmt(str string) (string, error) {
-	start := strings.Index(str, "```go") + len("```go")
-	code := str[start:]
-	end := strings.Index(code, "```")
+func gofmt(content []byte) ([]byte, error) {
+	start := strings.Index(string(content), "```go") + len("```go")
+	code := content[start:]
+	end := strings.Index(string(code), "```")
 	code = code[:end]
+	codeStr := string(code)
 
-	if !strings.Contains(code, "func main") {
-		return "", errors.New("missing func main")
+	if !strings.Contains(codeStr, "func main") {
+		return nil, errors.New("missing func main")
 	}
-	if strings.Count(code, "\n") < 3 {
-		return "", errors.New("there were less than 3 new lines")
+	if strings.Count(codeStr, "\n") < 3 {
+		return nil, errors.New("there were less than 3 new lines")
 	}
 
-	formatted, err := format.Source([]byte(code))
+	// go fmt
+	formatted, err := format.Source(code)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return string(formatted), nil
+	// replace \t with spaces
+	const tabInSpaces = "    "
+	const tab = "\t"
+	fStr := strings.Replace(string(formatted), tab, tabInSpaces, -1)
+	formatted = []byte(fStr)
+
+	// wrap in code block
+	formatted = append([]byte("```go"), formatted...)
+	formatted = append(formatted, []byte("```")...)
+
+	return formatted, nil
 }
