@@ -9,7 +9,7 @@ import (
 	"github.com/andersfylling/disgord"
 )
 
-const prefixCodeBlock = "```go\n"
+const prefixCodeBlock = "```go"
 const suffixCodeBlock = "```"
 
 func getMsg(evt interface{}) (msg *disgord.Message) {
@@ -113,12 +113,12 @@ func gofmt(content []rune) ([]rune, error) {
 	const tabInSpaces = "    "
 	const tab = "\t"
 	fStr := strings.Replace(string(formatted), tab, tabInSpaces, -1)
-	formatted = []byte(fStr)
 
 	// wrap in code block
 	if start > 0 {
-		formatted = append([]byte(prefixCodeBlock), formatted...)
-		formatted = append(formatted, []byte(suffixCodeBlock)...)
+		b := &bytes.Buffer{}
+		b.WriteString(prefixCodeBlock + "\n" + fStr + suffixCodeBlock)
+		formatted = b.Bytes()
 	}
 
 	return bytes.Runes(formatted), nil
