@@ -3,12 +3,13 @@ package main
 import (
 	"bytes"
 	"errors"
-	"github.com/andersfylling/disgord"
 	"go/format"
 	"strings"
+
+	"github.com/andersfylling/disgord"
 )
 
-const prefixCodeBlock = "```go"
+const prefixCodeBlock = "```go\n"
 const suffixCodeBlock = "```"
 
 func getMsg(evt interface{}) (msg *disgord.Message) {
