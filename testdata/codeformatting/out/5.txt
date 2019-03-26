@@ -1,3 +1,5 @@
 ```go
+import "os"
+
 func main() { fmt.Println("test") }
 ```

@@ -94,16 +94,13 @@ func gofmt(content []rune) ([]rune, error) {
 	}
 
 	// control checks
-	codeStr := string(code)
+	codeStr := strings.TrimSpace(string(code))
 	if !strings.Contains(codeStr, "func main") {
 		return nil, errors.New("missing func main")
 	}
-	if strings.Count(codeStr, "\n") < 3 {
-		return nil, errors.New("there were less than 3 new lines")
-	}
 
 	// go fmt
-	formatted, err := format.Source([]byte(codeStr))
+	formatted, err := format.Source([]byte("\n" + codeStr + "\n"))
 	if err != nil {
 		return nil, err
 	}

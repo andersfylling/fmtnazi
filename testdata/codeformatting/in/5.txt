@@ -1,2 +1,2 @@
-```go
+```goimport "os"
 func main() {fmt.Println("test")}```

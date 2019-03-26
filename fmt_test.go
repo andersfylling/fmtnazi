@@ -61,8 +61,16 @@ func TestFmt(t *testing.T) {
 
 		got, err := gofmt(bytes.Runes(input))
 		if err = compare([]byte(string(got)), expects); err != nil {
-			t.Error(err)
+			t.Error("file", inputs[i], "\n", err)
 		}
+	}
+
+	// space test
+	str := "```go \nfunc main() {fmt.Println(" + `"test"` + ")}```"
+	str2 := "```go\nfunc main() { fmt.Println(" + `"test"` + ") }\n```"
+	got, err := gofmt(bytes.Runes([]byte(str)))
+	if err = compare([]byte(string(got)), []byte(str2)); err != nil {
+		t.Error(err)
 	}
 }
 
